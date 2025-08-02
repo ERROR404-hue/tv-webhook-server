@@ -16,6 +16,8 @@ def webhook():
     if not data:
         return jsonify({"error": "No JSON received"}), 400
 
+    print("Received JSON:", data)  # 🔥 Add this
+
     signal = data.get("signal")
     price = data.get("price")
     symbol = data.get("symbol")
