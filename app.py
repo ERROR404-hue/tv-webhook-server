@@ -4,7 +4,6 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Logs will be saved in a text file
 LOG_FILE = "alerts.log"
 
 @app.route("/", methods=["GET"])
@@ -29,3 +28,7 @@ def webhook():
         f.write(log_entry)
 
     return jsonify({"status": "received", "data": data})
+
+# THIS KEEPS THE SERVER RUNNING
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
