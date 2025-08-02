@@ -12,37 +12,23 @@ def index():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    try:
-        content_type = request.headers.get('Content-Type')
-        print(f"📡 Received content-type: {content_type}")
+    print("Raw data:", request.data.decode("utf-8"))  # 👈 NEW LINE
+    data = request.get_json()
+    if not data:
+        print("No JSON received.")
+        return jsonify({"error": "No JSON received"}), 400
 
-        if 'application/json' in content_type:
-            data = request.get_json(force=True)
-        else:
-            raw_body = request.data.decode('utf-8')
-            print("📦 Raw POST body:", raw_body)
-            
-            # Parse manually if needed (basic example):
-            data = {}
-            for line in raw_body.strip().splitlines():
-                if ':' in line:
-                    key, value = line.strip().split(':', 1)
-                    data[key.strip()] = value.strip()
-        
-        signal = data.get("signal")
-        price = data.get("price")
-        symbol = data.get("symbol")
-        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    print("Received JSON:", data)  # 🔥 Already there
 
-        log_entry = f"{now} - Signal: {signal} | Symbol: {symbol} | Price: {price}\n"
-        print(log_entry)
+    signal = data.get("signal")
+    price = data.get("price")
+    symbol = data.get("symbol")
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
-        with open(LOG_FILE, "a") as f:
-            f.write(log_entry)
+    log_entry = f"{now} - Signal: {signal} | Symbol: {symbol} | Price: {price}\n"
+    print(log_entry)
 
-        return jsonify({"status": "received", "data": data})
-    
-    except Exception as e:
-        print("❌ Webhook error:", str(e))
-        return jsonify({"error": str(e)}), 500
+    with open(LOG_FILE, "a") as f:
+        f.write(log_entry)
 
+    return jsonify({"status": "received", "data": data})
