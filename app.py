@@ -12,13 +12,13 @@ def index():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    print("Raw data:", request.data.decode("utf-8"))  # 👈 NEW LINE
+    print("Raw data:", request.data.decode("utf-8"))  # For debugging
     data = request.get_json()
     if not data:
         print("No JSON received.")
         return jsonify({"error": "No JSON received"}), 400
 
-    print("Received JSON:", data)  # 🔥 Already there
+    print("Received JSON:", data)
 
     signal = data.get("signal")
     price = data.get("price")
@@ -28,7 +28,8 @@ def webhook():
     log_entry = f"{now} - Signal: {signal} | Symbol: {symbol} | Price: {price}\n"
     print(log_entry)
 
+    # Write to log file
     with open(LOG_FILE, "a") as f:
         f.write(log_entry)
 
-    return jsonify({"status": "received", "data": data})
+    return jsonify({"status": "success"}), 200
