@@ -1,25 +1,30 @@
 from flask import Flask, request, jsonify
-from datetime import datetime
+from datetime import datetime, timezone
+import logging
 
 app = Flask(__name__)
 
+logging.basicConfig(level=logging.INFO)
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    print("Raw data:", request.data.decode("utf-8"))
+    raw = request.data.decode("utf-8")
+    logging.info(f"Raw data: {raw}")
+
     data = request.get_json()
     if not data:
-        print("No JSON received.")
+        logging.warning("No JSON received.")
         return jsonify({"error": "No JSON received"}), 400
 
-    print("Received JSON:", data)
+    logging.info(f"Received JSON: {data}")
 
     signal = data.get("signal")
     price = data.get("price")
     symbol = data.get("symbol")
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     log_entry = f"{now} - Signal: {signal} | Symbol: {symbol} | Price: {price}"
-    print(log_entry)
+    logging.info(log_entry)
 
     return jsonify({"status": "success"}), 200
 
