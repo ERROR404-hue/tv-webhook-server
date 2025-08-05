@@ -8,28 +8,22 @@ logging.basicConfig(level=logging.INFO)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    raw = request.data.decode("utf-8")
-    logging.info(f"Raw data: {raw}")
-
     data = request.get_json()
     if not data:
         logging.warning("No JSON received.")
         return jsonify({"error": "No JSON received"}), 400
 
-    logging.info(f"Received JSON: {data}")
-
-    signal = data.get("signal")
+    # Extract the correct keys
+    action = data.get("action")
     price = data.get("price")
     symbol = data.get("symbol")
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f UTC")[:-3]
 
-    log_entry = f"{now} - Signal: {signal} | Symbol: {symbol} | Price: {price}"
+    # Only log structured message
+    log_entry = f"{now} - Action: {action} | Symbol: {symbol} | Price: {price}"
     logging.info(log_entry)
 
     return jsonify({"status": "success"}), 200
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
 
 @app.route("/", methods=["GET"])
 def health_check():
