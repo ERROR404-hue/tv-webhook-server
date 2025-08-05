@@ -8,7 +8,8 @@ logging.basicConfig(level=logging.INFO)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json()
+    # Force JSON parsing even if headers are wrong
+    data = request.get_json(force=True, silent=True)
     if not data:
         logging.warning("No JSON received.")
         return jsonify({"error": "No JSON received"}), 400
