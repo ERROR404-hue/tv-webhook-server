@@ -13,13 +13,11 @@ def webhook():
         logging.warning("No JSON received.")
         return jsonify({"error": "No JSON received"}), 400
 
-    # Extract the correct keys
     action = data.get("action")
     price = data.get("price")
     symbol = data.get("symbol")
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f UTC")[:-3]
 
-    # Only log structured message
     log_entry = f"{now} - Action: {action} | Symbol: {symbol} | Price: {price}"
     logging.info(log_entry)
 
@@ -27,10 +25,7 @@ def webhook():
 
 @app.route("/", methods=["GET"])
 def health_check():
-    print("*nudges sorry boss hard to keep awake!")
     return "*nudges sorry boss hard to keep awake!", 200
-    
-    if __name__ == "__main__":
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
-
-
