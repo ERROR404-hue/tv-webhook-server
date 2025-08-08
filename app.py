@@ -1,14 +1,28 @@
 from flask import Flask, request, jsonify
 from datetime import datetime, timezone
 import logging
+import os
+from binance.client import Client
+from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
 
+# --- Flask app setup ---
 app = Flask(__name__)
-
 logging.basicConfig(level=logging.INFO)
 
+# --- Binance setup ---
+BINANCE_API_KEY = os.getenv("BINANCE_API_KEY")
+BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET")
+
+# Testnet URL override
+TESTNET = os.getenv("BINANCE_TESTNET", "true").lower() == "true"
+if TESTNET:
+    binance_client = Client(BINANCE_API_KEY, BINANCE_API_SECRET, testnet=True)
+else:
+    binance_client = Client(BINANCE_API_KEY, BINANCE_API_SECRET)
+
+# --- Webhook endpoint ---
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    # Force JSON parsing even if headers are wrong
     data = request.get_json(force=True, silent=True)
     if not data:
         logging.warning("No JSON received.")
@@ -17,18 +31,42 @@ def webhook():
     action = data.get("action")
     price = data.get("price")
     symbol = data.get("symbol")
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f UTC")[:-3]
 
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f UTC")[:-3]
     log_entry = f"{now} - Action: {action} | Symbol: {symbol} | Price: {price}"
     logging.info(log_entry)
 
-    return jsonify({"status": "success"}), 200
+    # Map TradingView actions to Binance orders
+    try:
+        if action == "long_entry":
+            order = binance_client.create_order(
+                symbol=symbol,
+                side=SIDE_BUY,
+                type=ORDER_TYPE_MARKET,
+                quantity=0.1  # <- adjust lot size
+            )
+        elif action == "short_entry":
+            order = binance_client.create_order(
+                symbol=symbol,
+                side=SIDE_SELL,
+                type=ORDER_TYPE_MARKET,
+                quantity=0.1
+            )
+        else:
+            return jsonify({"status": "ignored", "reason": "unknown action"}), 200
 
+        logging.info(f"Order executed: {order}")
+        return jsonify({"status": "success", "order": order}), 200
+
+    except Exception as e:
+        logging.error(f"Order failed: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# --- Health check ---
 @app.route("/", methods=["GET"])
 def health_check():
     return "*nudges sorry boss hard to keep awake!", 200
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
